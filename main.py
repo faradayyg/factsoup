@@ -1,14 +1,26 @@
-from fastapi import FastAPI
-from sqlalchemy import or_, select
+from fastapi import Depends, FastAPI
+from sqlalchemy import engine, or_, select
 from sqlalchemy.orm import Session
 from dtos import ArticlePayload
 from models import Article
 from dotenv import load_dotenv
-from chat_gpt import generate_article as chat_gpt_generate_article
+from services.chat_gpt import generate_article as chat_gpt_generate_article
+from models import engine
+from services.query import get_article_by_id
+
 
 load_dotenv()
 
 app = FastAPI()
+
+
+def get_session():
+    db = Session(engine)
+
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def _generate_and_save_article(payload: ArticlePayload, session: Session) -> Article:
@@ -23,10 +35,9 @@ def _generate_and_save_article(payload: ArticlePayload, session: Session) -> Art
     return new_article_obj
 
 
-def _get_or_create_article(payload: ArticlePayload, session: Session) -> str:
+def _get_or_create_article(payload: ArticlePayload, session: Session) -> Article:
     # Create a hash from the token
     token_hash = hash(payload.text)
-    print(token_hash)
     # Check if it exists
     statement = select(Article).where(
         or_(Article.token_hash == token_hash, Article.token == payload.text)
@@ -37,7 +48,7 @@ def _get_or_create_article(payload: ArticlePayload, session: Session) -> str:
         return article[0].generated_article
 
     article = _generate_and_save_article(payload, session)
-    return article.generated_article
+    return article
 
 
 @app.get("/")
@@ -45,13 +56,18 @@ def home():
     return {"msg": "hello"}
 
 
-@app.post("/generate-article")
-def generate_article(payload: ArticlePayload) -> dict[str, str]:
-    from models import engine
-
+@app.post("/generate-article/")
+def generate_article(
+    payload: ArticlePayload, session: Session = Depends(get_session)
+) -> dict[str, str]:
     # Get article from cache or create
-    session = Session(engine)
-    print("Is something up?? \n" * 3)
     with session:
         article = _get_or_create_article(payload, session)
-    return {"article": article}
+    return {"article": article.generated_article}
+
+
+@app.get("/article/{id}/")
+def get_article(id: int, session: Session = Depends(get_session)) -> dict[str, str]:
+    article = get_article_by_id(id, session)
+
+    return {"article": article.generated_article}

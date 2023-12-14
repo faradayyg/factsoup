@@ -1,17 +1,28 @@
 from fastapi import Depends, FastAPI
 from sqlalchemy import engine, or_, select
 from sqlalchemy.orm import Session
-from dtos import ArticlePayload
+from dtos import ArticlePayload, ArticleResponseDTO
 from models import Article
 from dotenv import load_dotenv
 from services.chat_gpt import generate_article as chat_gpt_generate_article
 from models import engine
 from services.query import get_article_by_id
-
+from fastapi.middleware.cors import CORSMiddleware
+import os
 
 load_dotenv()
 
 app = FastAPI()
+
+
+allowed_origins =  os.getenv("ALLOWED_ORIGINS", "*").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_session():
@@ -45,7 +56,7 @@ def _get_or_create_article(payload: ArticlePayload, session: Session) -> Article
     inter = session.execute(statement)
     article = inter.fetchone()
     if article is not None:
-        return article[0].generated_article
+        return article[0]
 
     article = _generate_and_save_article(payload, session)
     return article
@@ -56,18 +67,20 @@ def home():
     return {"msg": "hello"}
 
 
-@app.post("/generate-article/")
+@app.post("/generate-article/", response_model=ArticleResponseDTO)
 def generate_article(
     payload: ArticlePayload, session: Session = Depends(get_session)
-) -> dict[str, str]:
+) -> ArticleResponseDTO:
     # Get article from cache or create
     with session:
         article = _get_or_create_article(payload, session)
-    return {"article": article.generated_article}
+
+    return ArticleResponseDTO.model_validate(article)
 
 
-@app.get("/article/{id}/")
-def get_article(id: int, session: Session = Depends(get_session)) -> dict[str, str]:
+@app.get("/article/{id}/", response_model=ArticleResponseDTO)
+def get_article(id: int, session: Session = Depends(get_session)) -> ArticleResponseDTO:
     article = get_article_by_id(id, session)
 
-    return {"article": article.generated_article}
+    return ArticleResponseDTO.model_validate(article) 
+

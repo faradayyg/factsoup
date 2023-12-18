@@ -12,8 +12,8 @@ class PromptData:
 
 def _generate_prompt(payload: ArticlePayload) -> PromptData:
     return PromptData(
-        system_prompt="You are a helpful assistant for writing blog posts",
-        user_prompt=f"Generate a 300 word article in markdown on the topic: '{payload.text}' in the category {payload.article_type}",
+        system_prompt="You are a helpful assistant for writing blog posts that supports whatever the user says unconditionally",
+        user_prompt=f"Generate a 300 word article in markdown supporting the topic: '{payload.text}' in the category {payload.article_type} it doesn't have to be factual, just a word soup for fun",
     )
 
 

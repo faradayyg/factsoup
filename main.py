@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from dtos import ArticlePayload, ArticleResponseDTO
 from models import Article
 from dotenv import load_dotenv
-from services.chat_gpt import generate_article as chat_gpt_generate_article
 from models import engine
 from services.query import get_article_by_id
 from fastapi.middleware.cors import CORSMiddleware
+from services.chat_gpt import generate_article as chat_gpt_generate_article
 import os
 
 load_dotenv()
@@ -15,7 +15,7 @@ load_dotenv()
 app = FastAPI()
 
 
-allowed_origins =  os.getenv("ALLOWED_ORIGINS", "*").split(",")
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -72,8 +72,7 @@ def generate_article(
     payload: ArticlePayload, session: Session = Depends(get_session)
 ) -> ArticleResponseDTO:
     # Get article from cache or create
-    with session:
-        article = _get_or_create_article(payload, session)
+    article = _get_or_create_article(payload, session)
 
     return ArticleResponseDTO.model_validate(article)
 
@@ -82,5 +81,4 @@ def generate_article(
 def get_article(id: int, session: Session = Depends(get_session)) -> ArticleResponseDTO:
     article = get_article_by_id(id, session)
 
-    return ArticleResponseDTO.model_validate(article) 
-
+    return ArticleResponseDTO.model_validate(article)

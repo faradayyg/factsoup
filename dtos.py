@@ -1,5 +1,9 @@
+import datetime
 from pydantic import BaseModel, ConfigDict
 from enums import ArticleTypes
+from faker import Faker
+
+fake = Faker()
 
 
 class ArticlePayload(BaseModel):
@@ -14,4 +18,5 @@ class ArticleResponseDTO(BaseModel):
     token_hash: int
     generated_article: str
     token: str
-
+    name: str = fake.name()
+    date: datetime.datetime = datetime.datetime.now()

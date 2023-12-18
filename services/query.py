@@ -15,4 +15,3 @@ def get_article_by_id(id: int, session: Session) -> Article:
         )
 
     return result[0]
-

@@ -8,14 +8,13 @@ from models import engine
 from services.query import get_article_by_id
 from fastapi.middleware.cors import CORSMiddleware
 from services.chat_gpt import generate_article as chat_gpt_generate_article
-import os
 
 load_dotenv()
 
 app = FastAPI()
 
 
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+allowed_origins = ["*"] # TODO: get this from env os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
